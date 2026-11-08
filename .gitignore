@@ -55,6 +55,7 @@ node_modules/
 DuckControl/android-sdk/
 DuckControl/jdk-*/
 DuckControl/android/local.properties
+DuckControl/jdk17.tar.gz
 
 # Android — Gradle build outputs
 DuckControl/android/.gradle/
