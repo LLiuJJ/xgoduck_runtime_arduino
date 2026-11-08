@@ -36,3 +36,42 @@ test_*.py
 .pytest_cache/
 .coverage*
 htmlcov/
+
+# ── DuckControl (React Native / Android) ──
+
+# Node.js
+node_modules/
+.npm
+.yarn/
+
+# React Native / Metro bundler
+.metro-cache/
+.metro-health-check*
+*.jsbundle
+*.bundle
+.react/
+
+# Android — local SDK / JDK (downloaded, not versioned)
+DuckControl/android-sdk/
+DuckControl/jdk-*/
+DuckControl/android/local.properties
+
+# Android — Gradle build outputs
+DuckControl/android/.gradle/
+DuckControl/android/app/build/
+DuckControl/android/build/
+DuckControl/android/app/debug.keystore
+DuckControl/android/app/release.keystore
+
+# Android — release artifacts
+*.apk
+*.aab
+*.dex
+*.class
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
