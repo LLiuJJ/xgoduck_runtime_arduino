@@ -69,7 +69,7 @@ export const ControlScreen: React.FC = () => {
   const joystickSize = useRobotStore(s => s.joystickSize);
 
   const [activeTab, setActiveTab] = useState<TabKey>('control');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const sticksRef = useRef<{left: StickState; right: StickState}>({
     left: {x: 0, y: 0},
@@ -78,7 +78,7 @@ export const ControlScreen: React.FC = () => {
 
   useEffect(() => {
     if (!host) {
-      setModalVisible(true);
+      setSettingsVisible(true);
     }
   }, [host]);
 
@@ -195,7 +195,7 @@ export const ControlScreen: React.FC = () => {
           </TouchableOpacity>
 
           <Btn title="⚡" onPress={torqueOff} danger disabled={!client} style={styles.iconBtn} />
-          <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.gearBtn}>
+          <TouchableOpacity onPress={() => setSettingsVisible(true)} style={styles.gearBtn}>
             <Text style={styles.gearIcon}>⚙</Text>
           </TouchableOpacity>
         </View>
@@ -300,10 +300,14 @@ export const ControlScreen: React.FC = () => {
         </TouchableOpacity>
       </Modal>
 
-      <ConnectionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
+      {/* === Settings full-screen overlay === */}
+      {settingsVisible && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <ConnectionModal
+            onClose={() => setSettingsVisible(false)}
+          />
+        </View>
+      )}
     </View>
   );
 };

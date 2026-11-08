@@ -1,5 +1,5 @@
-/** Connection modal: configure robot IP and port, test connection.
- *  Provides the entry point for the app to connect to the FastAPI server. */
+/** Settings screen: configure robot IP/port, test connection, joystick size.
+ *  Full-screen page (not a Modal) for reliable touch handling on real devices. */
 
 import React, {useState} from 'react';
 import {
@@ -7,7 +7,7 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Modal,
+  ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -19,14 +19,12 @@ import {createClient, buildBaseUrl, ApiError} from '../api/client';
 import {colors} from '../theme/colors';
 import {Btn} from './ui';
 
-interface ConnectionModalProps {
-  visible: boolean;
+interface SettingsScreenProps {
   onClose: () => void;
   onConnected?: () => void;
 }
 
-export const ConnectionModal: React.FC<ConnectionModalProps> = ({
-  visible,
+export const ConnectionModal: React.FC<SettingsScreenProps> = ({
   onClose,
   onConnected,
 }) => {
@@ -77,12 +75,25 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.title}>{t('conn.title')}</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}>
+      {/* Header bar */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} style={styles.backBtn}>
+          <Text style={styles.backText}>‹ {t('conn.cancel')}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('conn.title')}</Text>
+        <View style={styles.backBtn} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled">
+        {/* Connection section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('conn.title')}</Text>
 
           <Text style={styles.label}>{t('conn.ipLabel')}</Text>
           <TextInput
@@ -93,7 +104,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
-            keyboardType="numeric"
+            keyboardType="default"
           />
 
           <Text style={styles.label}>{t('conn.portLabel')}</Text>
@@ -116,67 +127,93 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             </Text>
           ) : null}
 
-          {/* Joystick size setting */}
-          <View style={styles.joystickSection}>
-            <View style={styles.sliderHeader}>
-              <Text style={styles.label}>{t('conn.joystickSize')}</Text>
-              <Text style={styles.sliderValue}>{joystickSize}px</Text>
-            </View>
-            <Slider
-              style={styles.slider}
-              minimumValue={JOYSTICK_SIZE_MIN}
-              maximumValue={JOYSTICK_SIZE_MAX}
-              step={4}
-              value={joystickSize}
-              onSlidingComplete={(v: number) => setJoystickSize(v)}
-              minimumTrackTintColor={colors.button}
-              maximumTrackTintColor={colors.joyBorder}
-              thumbTintColor={colors.button}
-            />
-            <Text style={styles.hint}>{t('conn.joystickSizeHint')}</Text>
-          </View>
-
           <View style={styles.buttonRow}>
             <Btn title={t('conn.test')} onPress={testConnection} disabled={testing} variant="ghost" />
             <Btn title={t('conn.save')} onPress={save} />
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>{t('conn.cancel')}</Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+        {/* Joystick size setting */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('conn.joystickSize')}</Text>
+          <View style={styles.sliderHeader}>
+            <Text style={styles.label}>{t('conn.joystickSize')}</Text>
+            <Text style={styles.sliderValue}>{joystickSize}px</Text>
+          </View>
+          <Slider
+            style={styles.slider}
+            minimumValue={JOYSTICK_SIZE_MIN}
+            maximumValue={JOYSTICK_SIZE_MAX}
+            step={4}
+            value={joystickSize}
+            onSlidingComplete={(v: number) => setJoystickSize(v)}
+            minimumTrackTintColor={colors.button}
+            maximumTrackTintColor={colors.joyBorder}
+            thumbTintColor={colors.button}
+          />
+          <Text style={styles.hint}>{t('conn.joystickSizeHint')}</Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 20,
+    backgroundColor: colors.background,
   },
-  modal: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  backBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    minWidth: 60,
+  },
+  backText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  section: {
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
   },
-  title: {
-    fontSize: 20,
+  sectionTitle: {
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   label: {
     color: colors.textSecondary,
     fontSize: 14,
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: 10,
+    marginBottom: 4,
   },
   input: {
     backgroundColor: colors.inputBg,
@@ -190,7 +227,7 @@ const styles = StyleSheet.create({
   },
   testResult: {
     fontSize: 14,
-    marginTop: 12,
+    marginTop: 10,
   },
   testOk: {
     color: colors.accent,
@@ -201,22 +238,8 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 20,
-  },
-  cancelBtn: {
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-  },
-  cancelText: {
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  joystickSection: {
+    gap: 10,
     marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   sliderHeader: {
     flexDirection: 'row',
@@ -236,6 +259,6 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: 11,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
 });
