@@ -37,22 +37,52 @@ export const Joystick: React.FC<JoystickProps> = ({
   const maxRadius = (size - knobSize) / 2;
   const knobPos = useRef(new Animated.ValueXY({x: 0, y: 0})).current;
 
+  // Refs to avoid stale closures in memoized PanResponder
+  const onMoveRef = useRef(onMove);
+  onMoveRef.current = onMove;
+  const onReleaseRef = useRef(onRelease);
+  onReleaseRef.current = onRelease;
+
+  // Records the touch offset from center at grant time
+  const grantOffsetRef = useRef({x: 0, y: 0});
+
+  const applyPosition = useCallback(
+    (dx: number, dy: number) => {
+      const distance = Math.hypot(dx, dy);
+      let clampedDx = dx;
+      let clampedDy = dy;
+      if (distance > maxRadius) {
+        clampedDx = (dx * maxRadius) / distance;
+        clampedDy = (dy * maxRadius) / distance;
+      }
+      knobPos.setValue({x: clampedDx, y: clampedDy});
+      const nx = clampedDx / maxRadius;
+      const ny = -clampedDy / maxRadius;
+      onMoveRef.current(nx, ny);
+    },
+    [maxRadius, knobPos],
+  );
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => !disabled,
         onMoveShouldSetPanResponder: () => !disabled,
         onPanResponderGrant: evt => {
-          // Calculate initial offset from center
-          handleMove(evt.nativeEvent.locationX, evt.nativeEvent.locationY);
+          // Record initial touch offset from center (locationX/Y used once here)
+          const centerX = size / 2;
+          const centerY = size / 2;
+          const dx = evt.nativeEvent.locationX - centerX;
+          const dy = evt.nativeEvent.locationY - centerY;
+          grantOffsetRef.current = {x: dx, y: dy};
+          applyPosition(dx, dy);
         },
-        onPanResponderMove: (evt, gestureState) => {
-          // Use gesture state delta from the initial touch point
-          // locationX/locationY can be unreliable on some platforms,
-          // so we use the grant point + gestureState.dx/dy
-          const cx = evt.nativeEvent.locationX - gestureState.dx;
-          const cy = evt.nativeEvent.locationY - gestureState.dy;
-          handleMove(cx + gestureState.dx, cy + gestureState.dy);
+        onPanResponderMove: (_evt, gestureState) => {
+          // Use ONLY gestureState deltas — locationX/Y jumps when finger
+          // crosses child views (knob, crosshairs) on Android
+          const dx = grantOffsetRef.current.x + gestureState.dx;
+          const dy = grantOffsetRef.current.y + gestureState.dy;
+          applyPosition(dx, dy);
         },
         onPanResponderRelease: () => {
           Animated.spring(knobPos, {
@@ -61,39 +91,17 @@ export const Joystick: React.FC<JoystickProps> = ({
             tension: 40,
             friction: 8,
           }).start();
-          onRelease();
+          onReleaseRef.current();
         },
         onPanResponderTerminate: () => {
           Animated.spring(knobPos, {
             toValue: {x: 0, y: 0},
             useNativeDriver: false,
           }).start();
-          onRelease();
+          onReleaseRef.current();
         },
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [disabled, size],
-  );
-
-  const handleMove = useCallback(
-    (locationX: number, locationY: number) => {
-      // Center of the joystick zone
-      const centerX = size / 2;
-      const centerY = size / 2;
-      let dx = locationX - centerX;
-      let dy = locationY - centerY;
-      const distance = Math.hypot(dx, dy);
-      if (distance > maxRadius) {
-        dx = (dx * maxRadius) / distance;
-        dy = (dy * maxRadius) / distance;
-      }
-      knobPos.setValue({x: dx, y: dy});
-      // Normalized values: x = right positive, y = up positive (inverted)
-      const nx = dx / maxRadius;
-      const ny = -dy / maxRadius; // invert Y so up = positive
-      onMove(nx, ny);
-    },
-    [maxRadius, onMove, size, knobPos],
+    [disabled, size, applyPosition],
   );
 
   return (
@@ -110,11 +118,12 @@ export const Joystick: React.FC<JoystickProps> = ({
           },
         ]}
         {...panResponder.panHandlers}>
-        {/* Crosshair lines */}
-        <View style={[styles.crossH, {width: size, top: size / 2 - 0.5}]} />
-        <View style={[styles.crossV, {height: size, left: size / 2 - 0.5}]} />
-        {/* Knob */}
+        {/* Crosshair lines — pointerEvents none so they don't steal touch */}
+        <View pointerEvents="none" style={[styles.crossH, {width: size, top: size / 2 - 0.5}]} />
+        <View pointerEvents="none" style={[styles.crossV, {height: size, left: size / 2 - 0.5}]} />
+        {/* Knob — pointerEvents none so it doesn't steal touch */}
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.knob,
             {

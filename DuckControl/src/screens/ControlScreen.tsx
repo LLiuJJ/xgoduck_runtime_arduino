@@ -66,6 +66,7 @@ export const ControlScreen: React.FC = () => {
   const zeroMotion = useRobotStore(s => s.zeroMotion);
   const setMessage = useRobotStore(s => s.setMessage);
   const motion = useRobotStore(s => s.motion);
+  const joystickSize = useRobotStore(s => s.joystickSize);
 
   const [activeTab, setActiveTab] = useState<TabKey>('control');
   const [modalVisible, setModalVisible] = useState(false);
@@ -211,7 +212,7 @@ export const ControlScreen: React.FC = () => {
           {/* Left: joystick */}
           <View style={styles.joystickCol}>
             <Joystick
-              size={116}
+              size={joystickSize}
               label={leftLabel}
               valueLabel={leftValue}
               disabled={joystickDisabled}
@@ -238,7 +239,7 @@ export const ControlScreen: React.FC = () => {
           {/* Right: joystick */}
           <View style={styles.joystickCol}>
             <Joystick
-              size={116}
+              size={joystickSize}
               label={t('ctrl.yaw')}
               valueLabel={rightValue}
               disabled={joystickDisabled}

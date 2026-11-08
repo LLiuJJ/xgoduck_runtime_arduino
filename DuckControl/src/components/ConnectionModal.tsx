@@ -12,7 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import {useRobotStore} from '../store/robotStore';
+import Slider from '@react-native-community/slider';
+import {useRobotStore, JOYSTICK_SIZE_MIN, JOYSTICK_SIZE_MAX} from '../store/robotStore';
 import {useTranslation} from '../i18n';
 import {createClient, buildBaseUrl, ApiError} from '../api/client';
 import {colors} from '../theme/colors';
@@ -33,6 +34,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   const host = useRobotStore(s => s.host);
   const port = useRobotStore(s => s.port);
   const saveConnection = useRobotStore(s => s.saveConnection);
+  const joystickSize = useRobotStore(s => s.joystickSize);
+  const setJoystickSize = useRobotStore(s => s.setJoystickSize);
 
   const [ipValue, setIpValue] = useState(host || '');
   const [portValue, setPortValue] = useState(String(port || 9527));
@@ -113,6 +116,26 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             </Text>
           ) : null}
 
+          {/* Joystick size setting */}
+          <View style={styles.joystickSection}>
+            <View style={styles.sliderHeader}>
+              <Text style={styles.label}>{t('conn.joystickSize')}</Text>
+              <Text style={styles.sliderValue}>{joystickSize}px</Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={JOYSTICK_SIZE_MIN}
+              maximumValue={JOYSTICK_SIZE_MAX}
+              step={4}
+              value={joystickSize}
+              onSlidingComplete={(v: number) => setJoystickSize(v)}
+              minimumTrackTintColor={colors.button}
+              maximumTrackTintColor={colors.joyBorder}
+              thumbTintColor={colors.button}
+            />
+            <Text style={styles.hint}>{t('conn.joystickSizeHint')}</Text>
+          </View>
+
           <View style={styles.buttonRow}>
             <Btn title={t('conn.test')} onPress={testConnection} disabled={testing} variant="ghost" />
             <Btn title={t('conn.save')} onPress={save} />
@@ -188,5 +211,31 @@ const styles = StyleSheet.create({
   cancelText: {
     color: colors.textSecondary,
     fontSize: 16,
+  },
+  joystickSection: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sliderValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.button,
+  },
+  slider: {
+    width: '100%',
+    height: 30,
+    marginTop: 4,
+  },
+  hint: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 });

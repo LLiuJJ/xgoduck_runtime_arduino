@@ -15,7 +15,11 @@ import type {
 
 const STORAGE_KEY_HOST = '@duck_host';
 const STORAGE_KEY_PORT = '@duck_port';
+const STORAGE_KEY_JOYSTICK_SIZE = '@duck_joystick_size';
 const DEFAULT_PORT = 9527;
+export const DEFAULT_JOYSTICK_SIZE = 140;
+export const JOYSTICK_SIZE_MIN = 100;
+export const JOYSTICK_SIZE_MAX = 180;
 
 export const MOTION_RANGES: Record<'walk' | 'roller', MotionLimits> = {
   walk: {forward: 0.2, backward: 0.2, strafe: 0.3, yaw: 1},
@@ -64,6 +68,10 @@ interface RobotStore {
   kickActive: boolean;
   sitstandPhase: string;
   sitstandReady: boolean;
+
+  // UI settings
+  joystickSize: number;
+  setJoystickSize: (size: number) => Promise<void>;
 }
 
 function makeClient(host: string, port: number): ApiClient {
@@ -79,16 +87,18 @@ export const useRobotStore = create<RobotStore>((set, get) => ({
 
   loadConnection: async () => {
     try {
-      const [host, portStr] = await Promise.all([
+      const [host, portStr, jsSizeStr] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY_HOST),
         AsyncStorage.getItem(STORAGE_KEY_PORT),
+        AsyncStorage.getItem(STORAGE_KEY_JOYSTICK_SIZE),
       ]);
       const hostVal = host || '';
       const portVal = portStr ? parseInt(portStr, 10) : DEFAULT_PORT;
       const client = hostVal ? makeClient(hostVal, portVal) : null;
-      set({host: hostVal, port: portVal, client});
+      const jsSize = jsSizeStr ? parseInt(jsSizeStr, 10) : DEFAULT_JOYSTICK_SIZE;
+      set({host: hostVal, port: portVal, client, joystickSize: jsSize});
     } catch {
-      set({host: '', port: DEFAULT_PORT, client: null});
+      set({host: '', port: DEFAULT_PORT, client: null, joystickSize: DEFAULT_JOYSTICK_SIZE});
     }
   },
 
@@ -102,6 +112,14 @@ export const useRobotStore = create<RobotStore>((set, get) => ({
   setConnection: (host, port) => {
     const client = host ? makeClient(host, port) : null;
     set({host, port, client, connected: false, status: null});
+  },
+
+  // UI settings
+  joystickSize: DEFAULT_JOYSTICK_SIZE,
+  setJoystickSize: async (size: number) => {
+    const clamped = Math.max(JOYSTICK_SIZE_MIN, Math.min(JOYSTICK_SIZE_MAX, Math.round(size)));
+    await AsyncStorage.setItem(STORAGE_KEY_JOYSTICK_SIZE, String(clamped));
+    set({joystickSize: clamped});
   },
 
   // Status

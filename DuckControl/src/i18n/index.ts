@@ -94,6 +94,8 @@ const en: Record<string, string> = {
   'conn.failed': 'Connection failed',
   'conn.mode': 'Mode',
   'conn.servos': 'servos',
+  'conn.joystickSize': 'Joystick size',
+  'conn.joystickSizeHint': 'Adjust virtual joystick diameter for your finger.',
 
   // Mode labels (getModeLabel)
   'modeLabel.shadow': 'inference only',
@@ -211,6 +213,8 @@ const zh: Record<string, string> = {
   'conn.failed': '连接失败',
   'conn.mode': '模式',
   'conn.servos': '舵机',
+  'conn.joystickSize': '摇杆尺寸',
+  'conn.joystickSizeHint': '根据手指大小调整虚拟摇杆直径。',
 
   // Mode labels (getModeLabel)
   'modeLabel.shadow': '仅推理',
