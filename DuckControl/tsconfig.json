@@ -1,0 +1,10 @@
+{
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "android-sdk",
+    "jdk-17.*",
+    "android",
+    "ios"
+  ]
+}
