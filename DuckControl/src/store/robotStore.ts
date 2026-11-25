@@ -182,6 +182,9 @@ export const useRobotStore = create<RobotStore>((set, get) => ({
       const value = 0.75 * old + 0.25 * targetMotion[i];
       return targetMotion[i] === 0 && Math.abs(value) < 0.001 ? 0 : value;
     }) as Vec3;
+    // 后退与原地转向经过低速区会失稳；回中时立即归零，前进/侧移仍平滑。
+    if (targetMotion[0] === 0 && smoothed[0] < 0) smoothed[0] = 0;
+    if (targetMotion[2] === 0 && smoothed[2] !== 0) smoothed[2] = 0;
     set({motion: smoothed});
     return smoothed;
   },

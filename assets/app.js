@@ -109,7 +109,7 @@ $('stop').onclick=()=>{zero();setMode('off')};
 const keys=new Set(), sticks={left:{x:0,y:0},right:{x:0,y:0}}, resetSticks=[];
 let motion=[0,0,0], targetMotion=[0,0,0];
 const deadzone=v=>Math.abs(v)<=.15?0:v;
-function updateMotion(){
+function updateMotion(immediateUnstableStop=false){
   if(kickActive||imuCalibrationActive||imuCalibrationBusy){targetMotion=[0,0,0];return;}
   const key=(a,b)=>keys.has(a)-keys.has(b);
   const limits=motionRanges[rollerEnabled?'roller':'walk'];
@@ -119,6 +119,11 @@ function updateMotion(){
     keys.has('q')||keys.has('e')?key('q','e')*limits.keyboard[2]:deadzone(-sticks.right.x)*limits.yaw];
   targetMotion[0]=Math.max(-limits.backward,Math.min(limits.forward,targetMotion[0]));
   targetMotion[2]=Math.max(-limits.yaw,Math.min(limits.yaw,targetMotion[2]));
+  // 后退与原地转向经过低速区会失稳；回中时立即归零，前进/侧移仍平滑。
+  if(immediateUnstableStop){
+    if(targetMotion[0]===0&&motion[0]<0)motion[0]=0;
+    if(targetMotion[2]===0&&motion[2]!==0)motion[2]=0;
+  }
 }
 function showMotion(){
   ['vx','vy','wz'].forEach((id,i)=>$(id+'Value').textContent=motion[i].toFixed(2));
@@ -148,11 +153,11 @@ function joystick(id,side){
     const distance=Math.hypot(dx,dy);
     if(distance>radius){dx*=radius/distance;dy*=radius/distance;}
     knob.style.transform=`translate(${dx}px,${dy}px)`;
-    sticks[side]={x:dx/radius,y:-dy/radius};updateMotion();
+    sticks[side]={x:dx/radius,y:-dy/radius};updateMotion(true);
   }
   zone.onpointerdown=e=>{if(pointer!==null||e.button!==0)return;e.preventDefault();pointer=e.pointerId;zone.setPointerCapture(pointer);move(e);sendCommand();};
   zone.onpointermove=e=>{if(e.pointerId===pointer)move(e);};
-  const release=e=>{if(e.pointerId!==pointer)return;reset();updateMotion();sendCommand();};
+  const release=e=>{if(e.pointerId!==pointer)return;reset();updateMotion(true);sendCommand();};
   zone.onpointerup=zone.onpointercancel=zone.onlostpointercapture=release;
 }
 joystick('joy-left','left');joystick('joy-right','right');
@@ -198,9 +203,9 @@ for(const [id,action]of [['imu-calibrate','start'],['imu-reset','reset']])$(id).
   }catch(e){imuCalibrationError=e.message;}
   finally{imuCalibrationBusy=false;showImuCalibration();}
 };
-function keyCommand(){updateMotion();sendCommand();}
+function keyCommand(immediateUnstableStop=false){updateMotion(immediateUnstableStop);sendCommand();}
 window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();$('stop').click();return;}const k=e.key.toLowerCase();if('wasdqe'.includes(k)&&k.length===1){keys.add(k);keyCommand();}});
-window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(keys.delete(k))keyCommand();});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(keys.delete(k))keyCommand(true);});
 window.addEventListener('blur',()=>zero());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)zero();});
 window.addEventListener('pagehide',()=>{
